@@ -20,6 +20,10 @@ from contextllm.optimization.optimizer import (
     ContextOptimizer,
     optimize_context
 )
+from contextllm.optimization.explainer import (
+    DecisionExplainer,
+    explain_optimization
+)
 
 __all__ = [
     "estimate_chunk_tokens",
@@ -34,4 +38,6 @@ __all__ = [
     "validate_budget",
     "ContextOptimizer",
     "optimize_context",
+    "DecisionExplainer",
+    "explain_optimization",
 ]

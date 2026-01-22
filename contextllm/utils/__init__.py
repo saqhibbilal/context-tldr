@@ -8,6 +8,8 @@ from contextllm.utils.tokenizer import (
     estimate_tokens_for_prompt
 )
 from contextllm.utils.logging_setup import setup_logging
+from contextllm.utils.observability import DecisionLogger, get_decision_logger
+from contextllm.utils.metadata_db import QueryMetadataStore
 
 __all__ = [
     "Config",
@@ -17,4 +19,7 @@ __all__ = [
     "count_tokens_batch",
     "estimate_tokens_for_prompt",
     "setup_logging",
+    "DecisionLogger",
+    "get_decision_logger",
+    "QueryMetadataStore",
 ]
