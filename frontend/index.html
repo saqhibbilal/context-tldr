@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Budget Optimizer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Context Budget Optimizer</h1>
+            <p class="subtitle">Intelligently select document chunks to maximize answer quality within token budget</p>
+        </header>
+
+        <main>
+            <section class="query-section">
+                <div class="form-group">
+                    <label for="query-input">Enter your question:</label>
+                    <textarea 
+                        id="query-input" 
+                        placeholder="Ask a question about your documents..."
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="budget-slider">
+                        Token Budget: <span id="budget-value">2000</span> tokens
+                    </label>
+                    <input 
+                        type="range" 
+                        id="budget-slider" 
+                        min="500" 
+                        max="8000" 
+                        value="2000" 
+                        step="100"
+                    >
+                    <div class="slider-labels">
+                        <span>500</span>
+                        <span>8000</span>
+                    </div>
+                </div>
+
+                <button id="submit-btn" class="btn-primary">Submit Query</button>
+                <button id="clear-btn" class="btn-secondary">Clear</button>
+            </section>
+
+            <section id="loading-section" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Processing your query...</p>
+            </section>
+
+            <section id="results-section" class="results hidden">
+                <div class="result-header">
+                    <h2>Answer</h2>
+                    <div class="result-meta">
+                        <span id="model-info"></span>
+                        <span id="tokens-info"></span>
+                    </div>
+                </div>
+                <div id="answer-content" class="answer-content"></div>
+
+                <div class="optimization-summary">
+                    <h3>Optimization Summary</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Chunks Evaluated</div>
+                            <div class="stat-value" id="chunks-evaluated">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Chunks Selected</div>
+                            <div class="stat-value" id="chunks-selected">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Budget Used</div>
+                            <div class="stat-value" id="budget-used">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Tokens Used</div>
+                            <div class="stat-value" id="tokens-used">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chunks-section">
+                    <h3>Retrieved Chunks</h3>
+                    <div class="chunks-controls">
+                        <button id="toggle-chunks-btn" class="btn-secondary">Show Chunks</button>
+                        <select id="chunk-filter">
+                            <option value="all">All Chunks</option>
+                            <option value="selected">Selected Only</option>
+                            <option value="excluded">Excluded Only</option>
+                        </select>
+                    </div>
+                    <div id="chunks-container" class="chunks-container hidden"></div>
+                </div>
+            </section>
+
+            <section id="error-section" class="error hidden">
+                <h3>Error</h3>
+                <p id="error-message"></p>
+            </section>
+        </main>
+
+        <footer>
+            <p>Context Budget Optimizer v0.1.0</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
