@@ -1,0 +1,13 @@
+Context Budget Optimizer for Large Language Models
+
+This is a sample document for testing the Context Budget Optimizer system.
+
+The system intelligently selects document chunks based on semantic relevance and token cost. When a user asks a question, the system retrieves many potentially relevant text chunks using vector search. Each chunk is then evaluated based on semantic relevance, estimated token cost, and optional metadata such as recency or importance.
+
+A deterministic optimizer ranks these chunks by "value per token" and selects the best subset that fits within a configurable context budget. Only this optimized context is sent to the LLM, and the final answer is generated along with transparent metadata showing which chunks were included or excluded.
+
+The system architecture consists of four main layers: ingestion, retrieval, optimization, and generation. The ingestion layer processes documents, splits them into chunks, and generates embeddings. The retrieval layer performs similarity search to fetch candidate chunks. The optimization layer is the core of the project, ranking chunks by value per token and selecting the optimal subset. The generation layer constructs the final prompt and calls the Mistral API to produce the answer.
+
+This project demonstrates LLM systems engineering concepts including token economics, context management, deterministic control around probabilistic models, and observability into prompt construction. The system is designed to be free to build, easy to demo locally, and strong as a portfolio project that highlights system-level thinking.
+
+Key features include configurable token budgets, value-based ranking, full observability, local-first design for embeddings and vector search, and explainable decision-making. The system tracks all decisions including retrieved chunks, scores, token estimates, and final context selection.
