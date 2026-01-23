@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -82,6 +83,14 @@
                         <div class="stat-card">
                             <div class="stat-label">Tokens Used</div>
                             <div class="stat-value" id="tokens-used">-</div>
+                        </div>
+                    </div>
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <canvas id="chunks-chart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="budget-chart"></canvas>
                         </div>
                     </div>
                 </div>

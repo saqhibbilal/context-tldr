@@ -20,6 +20,8 @@ const chunkFilter = document.getElementById('chunk-filter');
 // State
 let currentQueryId = null;
 let currentChunks = [];
+let chunksChart = null;
+let budgetChart = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -151,11 +153,132 @@ function displayResults(data) {
         opt.budget_used ? `${opt.budget_used.toFixed(1)}%` : '-';
     document.getElementById('tokens-used').textContent = opt.total_tokens || '-';
 
+    // Update charts
+    updateCharts(opt);
+
     // Hide cost estimate (show actual results)
     document.getElementById('cost-estimate-section').classList.add('hidden');
 
     // Render chunks
     renderChunks();
+}
+
+function updateCharts(opt) {
+    // Chunks chart
+    const chunksCtx = document.getElementById('chunks-chart').getContext('2d');
+    if (chunksChart) {
+        chunksChart.destroy();
+    }
+    chunksChart = new Chart(chunksCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Selected', 'Excluded'],
+            datasets: [{
+                data: [opt.chunks_selected || 0, opt.chunks_excluded || 0],
+                backgroundColor: ['#4caf50', '#f44336'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#E8F4F6',
+                        font: {
+                            family: 'Quantico',
+                            size: 12
+                        },
+                        padding: 15
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Chunk Selection',
+                    color: '#E8F4F6',
+                    font: {
+                        family: 'Quantico',
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 10
+                }
+            }
+        }
+    });
+
+    // Budget chart
+    const budgetCtx = document.getElementById('budget-chart').getContext('2d');
+    if (budgetChart) {
+        budgetChart.destroy();
+    }
+    const budgetUsed = opt.budget_used || 0;
+    const budgetRemaining = 100 - budgetUsed;
+    budgetChart = new Chart(budgetCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Used', 'Remaining'],
+            datasets: [{
+                label: 'Budget Usage (%)',
+                data: [budgetUsed, budgetRemaining],
+                backgroundColor: ['#134E5E', '#0B3037'],
+                borderColor: ['#E8F4F6', '#A8C8D0'],
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Budget Utilization',
+                    color: '#E8F4F6',
+                    font: {
+                        family: 'Quantico',
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 10
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        color: '#A8C8D0',
+                        font: {
+                            family: 'Quantico',
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(232, 244, 246, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#A8C8D0',
+                        font: {
+                            family: 'Quantico',
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
 }
 
 function displayCostEstimate(estimate) {

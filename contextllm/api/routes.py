@@ -16,6 +16,7 @@ from contextllm.utils.errors import (
     ContextBudgetError, APIKeyError, NoDocumentsError, NoChunksFoundError,
     BudgetTooSmallError, RateLimitError, InvalidFileFormatError
 )
+from contextllm.utils.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -264,8 +265,14 @@ async def get_stats() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
+class CostEstimateRequest(BaseModel):
+    """Request model for cost estimation."""
+    query: str = Field(..., description="Query text")
+    budget: Optional[int] = Field(None, description="Token budget")
+
+
 @router.post("/api/estimate-cost")
-async def estimate_cost(query: str, budget: Optional[int] = None) -> Dict[str, Any]:
+async def estimate_cost(request: CostEstimateRequest) -> Dict[str, Any]:
     """
     Estimate token cost before generation.
     
@@ -284,7 +291,7 @@ async def estimate_cost(query: str, budget: Optional[int] = None) -> Dict[str, A
         from contextllm.utils.tokenizer import estimate_tokens_for_prompt
         
         # Retrieve chunks
-        chunks = search_chunks(query, top_k=50)
+        chunks = search_chunks(request.query, top_k=50)
         if not chunks:
             return {
                 'estimated_prompt_tokens': 0,
@@ -294,7 +301,7 @@ async def estimate_cost(query: str, budget: Optional[int] = None) -> Dict[str, A
             }
         
         # Optimize
-        optimization_result = optimize_context(chunks, budget=budget)
+        optimization_result = optimize_context(chunks, budget=request.budget)
         selected_chunks = optimization_result.get('selected_chunks', [])
         
         if not selected_chunks:
@@ -307,9 +314,9 @@ async def estimate_cost(query: str, budget: Optional[int] = None) -> Dict[str, A
         
         # Estimate prompt tokens
         prompt_builder = PromptBuilder()
-        messages = prompt_builder.build_messages(query, selected_chunks)
+        messages = prompt_builder.build_messages(request.query, selected_chunks)
         system_prompt = messages[0]['content'] if messages else ""
-        user_prompt = messages[1]['content'] if len(messages) > 1 else query
+        user_prompt = messages[1]['content'] if len(messages) > 1 else request.query
         
         chunk_texts = [chunk['text'] for chunk in selected_chunks]
         estimated_prompt = estimate_tokens_for_prompt(system_prompt, user_prompt, chunk_texts)
