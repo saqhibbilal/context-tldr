@@ -3,6 +3,7 @@
 import logging
 from typing import List, Optional
 from transformers import AutoTokenizer
+from contextllm.utils.cache import get_token_cache
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ def get_tokenizer(model_name: str = "mistralai/Mistral-7B-v0.1") -> AutoTokenize
 
 def count_tokens(text: str, model_name: Optional[str] = None) -> int:
     """
-    Count tokens in a text string using Mistral tokenizer.
+    Count tokens in a text string using Mistral tokenizer (with caching).
     
     Args:
         text: Text to count tokens for
@@ -48,14 +49,27 @@ def count_tokens(text: str, model_name: Optional[str] = None) -> int:
     if not text:
         return 0
     
+    # Check cache first
+    cache = get_token_cache()
+    cached = cache.get(text)
+    if cached is not None:
+        return cached
+    
     try:
         tokenizer = get_tokenizer(model_name) if model_name else get_tokenizer()
         tokens = tokenizer.encode(text, add_special_tokens=False)
-        return len(tokens)
+        count = len(tokens)
+        
+        # Cache it
+        cache.set(text, count)
+        return count
     except Exception as e:
         logger.error(f"Error counting tokens: {e}")
         # Fallback: rough estimate (1 token ≈ 4 characters)
-        return len(text) // 4
+        count = len(text) // 4
+        # Cache fallback estimate too
+        cache.set(text, count)
+        return count
 
 
 def count_tokens_batch(texts: List[str], model_name: Optional[str] = None) -> List[int]:

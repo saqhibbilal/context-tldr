@@ -9,6 +9,7 @@ from contextllm.ingestion.loader import load_documents
 from contextllm.ingestion.chunker import TextChunker
 from contextllm.ingestion.embedder import generate_embeddings
 from contextllm.ingestion.storage import VectorStore, MetadataStore
+from contextllm.utils.progress import create_progress_bar
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +69,12 @@ class IngestionPipeline:
             
             logger.info(f"Created {len(chunks)} chunks from document")
             
-            # Generate embeddings
+            # Generate embeddings with progress
             chunk_texts = [chunk['text'] for chunk in chunks]
+            progress = create_progress_bar(len(chunk_texts), "Generating embeddings")
             embeddings = generate_embeddings(chunk_texts)
+            if progress:
+                progress.close()
             
             # Assign IDs to chunks
             chunk_ids = []

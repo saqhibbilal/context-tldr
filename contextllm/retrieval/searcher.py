@@ -8,6 +8,7 @@ from contextllm.ingestion.storage import VectorStore
 from contextllm.ingestion.embedder import generate_embedding
 from contextllm.retrieval.query import embed_query, preprocess_query
 from contextllm.utils.config import get_config
+from contextllm.utils.errors import NoDocumentsError, NoChunksFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,10 @@ class ChunkSearcher:
             # Generate query embedding
             query_embedding = embed_query(processed_query)
             
+            # Check if vector store has any documents
+            if self.vector_store.collection.count() == 0:
+                raise NoDocumentsError()
+            
             # Search vector store
             results = self.vector_store.search(
                 query_embedding=query_embedding,
@@ -69,6 +74,9 @@ class ChunkSearcher:
             
             # Format results
             formatted_results = self._format_results(results, query_text=processed_query)
+            
+            if not formatted_results:
+                raise NoChunksFoundError(processed_query)
             
             logger.info(f"Found {len(formatted_results)} results")
             return formatted_results

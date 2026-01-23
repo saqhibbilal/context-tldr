@@ -10,6 +10,10 @@ from contextllm.utils.tokenizer import (
 from contextllm.utils.logging_setup import setup_logging
 from contextllm.utils.observability import DecisionLogger, get_decision_logger
 from contextllm.utils.metadata_db import QueryMetadataStore
+from contextllm.utils.errors import (
+    ContextBudgetError, APIKeyError, NoDocumentsError, NoChunksFoundError,
+    BudgetTooSmallError, RateLimitError, InvalidFileFormatError, handle_api_error
+)
 
 __all__ = [
     "Config",
@@ -22,4 +26,12 @@ __all__ = [
     "DecisionLogger",
     "get_decision_logger",
     "QueryMetadataStore",
+    "ContextBudgetError",
+    "APIKeyError",
+    "NoDocumentsError",
+    "NoChunksFoundError",
+    "BudgetTooSmallError",
+    "RateLimitError",
+    "InvalidFileFormatError",
+    "handle_api_error",
 ]

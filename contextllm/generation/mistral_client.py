@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from mistralai import Mistral
 from mistralai.models import ChatCompletionResponse
 from contextllm.utils.config import get_config
+from contextllm.utils.errors import APIKeyError, RateLimitError, handle_api_error
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,7 @@ class MistralClient:
             api_key = os.getenv("MISTRAL_API_KEY")
         
         if not api_key:
-            raise ValueError(
-                "Mistral API key not found. Set MISTRAL_API_KEY environment variable "
-                "or pass api_key parameter."
-            )
+            raise APIKeyError()
         
         # Get model name
         config = get_config()
@@ -99,7 +97,8 @@ class MistralClient:
             
         except Exception as e:
             logger.error(f"Error calling Mistral API: {e}")
-            raise
+            # Convert to user-friendly error
+            raise handle_api_error(e)
     
     def generate_text(
         self,

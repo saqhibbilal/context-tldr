@@ -4,8 +4,12 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import re
+from contextllm.utils.errors import InvalidFileFormatError, FileNotFoundError as CustomFileNotFoundError
 
 logger = logging.getLogger(__name__)
+
+# Supported file formats
+SUPPORTED_FORMATS = ['.txt', '.pdf']
 
 
 class DocumentLoader:
@@ -39,7 +43,7 @@ class TextLoader(DocumentLoader):
         """
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"File not found: {file_path}")
+            raise CustomFileNotFoundError(file_path)
         
         try:
             with open(path, 'r', encoding='utf-8') as f:
@@ -99,7 +103,7 @@ class PDFLoader(DocumentLoader):
         
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"File not found: {file_path}")
+            raise CustomFileNotFoundError(file_path)
         
         try:
             text_parts = []
@@ -145,6 +149,9 @@ def get_loader(file_path: str) -> DocumentLoader:
         
     Returns:
         DocumentLoader instance
+        
+    Raises:
+        InvalidFileFormatError: If file format is not supported
     """
     path = Path(file_path)
     extension = path.suffix.lower()
@@ -154,7 +161,7 @@ def get_loader(file_path: str) -> DocumentLoader:
     elif extension == '.pdf':
         return PDFLoader()
     else:
-        raise ValueError(f"Unsupported file type: {extension}. Supported types: .txt, .pdf")
+        raise InvalidFileFormatError(file_path, SUPPORTED_FORMATS)
 
 
 def load_documents(file_paths: List[str]) -> List[Dict[str, Any]]:

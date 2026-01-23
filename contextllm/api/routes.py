@@ -12,6 +12,10 @@ from contextllm.generation.generator import ResponseGenerator, generate_answer
 from contextllm.utils.metadata_db import QueryMetadataStore
 from contextllm.utils.observability import get_decision_logger
 from contextllm.utils.logging_setup import setup_logging
+from contextllm.utils.errors import (
+    ContextBudgetError, APIKeyError, NoDocumentsError, NoChunksFoundError,
+    BudgetTooSmallError, RateLimitError, InvalidFileFormatError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,22 +76,26 @@ async def submit_query(request: QueryRequest) -> QueryResponse:
         logger.info(f"Processing query {query_id}: {request.query[:100]}...")
         
         # Retrieve chunks
-        chunks = search_chunks(request.query, top_k=50)
-        if not chunks:
-            raise HTTPException(status_code=404, detail="No relevant chunks found")
+        try:
+            chunks = search_chunks(request.query, top_k=50)
+        except (NoDocumentsError, NoChunksFoundError) as e:
+            raise HTTPException(status_code=404, detail=str(e))
         
         # Log retrieval
         decision_logger.log_retrieval(request.query, chunks, top_k=50)
         
         # Optimize context
-        optimization_result = optimize_context(chunks, budget=request.budget)
-        selected_chunks = optimization_result.get('selected_chunks', [])
-        
-        if not selected_chunks:
-            raise HTTPException(
-                status_code=400,
-                detail="No chunks could fit within the budget. Try increasing the budget."
-            )
+        try:
+            optimization_result = optimize_context(chunks, budget=request.budget)
+            selected_chunks = optimization_result.get('selected_chunks', [])
+            
+            if not selected_chunks:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No chunks could fit within the budget. Try increasing the budget."
+                )
+        except BudgetTooSmallError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         
         # Log optimization
         decision_logger.log_optimization(request.query, chunks, optimization_result)
@@ -148,6 +156,16 @@ async def submit_query(request: QueryRequest) -> QueryResponse:
         
     except HTTPException:
         raise
+    except (APIKeyError, RateLimitError, BudgetTooSmallError, NoDocumentsError, NoChunksFoundError) as e:
+        # User-friendly errors
+        status_code = 400
+        if isinstance(e, APIKeyError):
+            status_code = 401
+        elif isinstance(e, RateLimitError):
+            status_code = 429
+        elif isinstance(e, (NoDocumentsError, NoChunksFoundError)):
+            status_code = 404
+        raise HTTPException(status_code=status_code, detail=str(e))
     except Exception as e:
         logger.error(f"Error processing query: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -231,22 +249,107 @@ async def get_stats() -> Dict[str, Any]:
         pipeline = IngestionPipeline()
         ingestion_stats = pipeline.get_stats()
         
-        # Get query stats
-        history = metadata_store.get_query_history(limit=1000)
-        total_queries = len(history)
+        # Get usage statistics
+        usage_stats = metadata_store.get_usage_statistics()
         
         stats = {
             'ingestion': ingestion_stats,
-            'queries': {
-                'total': total_queries,
-                'recent': len([h for h in history if h.get('timestamp')])
-            }
+            'usage': usage_stats
         }
         
         return stats
         
     except Exception as e:
         logger.error(f"Error getting stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/api/estimate-cost")
+async def estimate_cost(query: str, budget: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Estimate token cost before generation.
+    
+    Args:
+        query: Query text
+        budget: Token budget
+        
+    Returns:
+        Dictionary with cost estimates
+    """
+    try:
+        from contextllm.retrieval.searcher import search_chunks
+        from contextllm.optimization.optimizer import optimize_context
+        from contextllm.optimization.token_estimator import add_token_counts_to_chunks
+        from contextllm.generation.prompt_builder import PromptBuilder
+        from contextllm.utils.tokenizer import estimate_tokens_for_prompt
+        
+        # Retrieve chunks
+        chunks = search_chunks(query, top_k=50)
+        if not chunks:
+            return {
+                'estimated_prompt_tokens': 0,
+                'estimated_completion_tokens': 500,
+                'estimated_total_tokens': 500,
+                'chunks_estimated': 0
+            }
+        
+        # Optimize
+        optimization_result = optimize_context(chunks, budget=budget)
+        selected_chunks = optimization_result.get('selected_chunks', [])
+        
+        if not selected_chunks:
+            return {
+                'estimated_prompt_tokens': 0,
+                'estimated_completion_tokens': 500,
+                'estimated_total_tokens': 500,
+                'chunks_estimated': 0
+            }
+        
+        # Estimate prompt tokens
+        prompt_builder = PromptBuilder()
+        messages = prompt_builder.build_messages(query, selected_chunks)
+        system_prompt = messages[0]['content'] if messages else ""
+        user_prompt = messages[1]['content'] if len(messages) > 1 else query
+        
+        chunk_texts = [chunk['text'] for chunk in selected_chunks]
+        estimated_prompt = estimate_tokens_for_prompt(system_prompt, user_prompt, chunk_texts)
+        
+        # Estimate completion (use config max_tokens as estimate)
+        config = get_config()
+        estimated_completion = config.get("generation.max_tokens", 1000)
+        
+        return {
+            'estimated_prompt_tokens': estimated_prompt,
+            'estimated_completion_tokens': estimated_completion,
+            'estimated_total_tokens': estimated_prompt + estimated_completion,
+            'chunks_estimated': len(selected_chunks),
+            'budget_used': optimization_result.get('budget_used', 0)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error estimating cost: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/api/batch")
+async def batch_query(queries: List[str], budget: Optional[int] = None) -> List[Dict[str, Any]]:
+    """
+    Process multiple queries in batch.
+    
+    Args:
+        queries: List of query strings
+        budget: Optional token budget for all queries
+        
+    Returns:
+        List of result dictionaries
+    """
+    try:
+        from contextllm.api.batch import BatchProcessor
+        processor = BatchProcessor()
+        results = processor.process_batch(queries, budget=budget)
+        return results
+    except Exception as e:
+        logger.error(f"Error in batch processing: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

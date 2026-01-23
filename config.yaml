@@ -47,3 +47,12 @@ metadata:
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR
   log_file: "./data/app.log"
+
+# Cache Settings
+cache:
+  embedding_dir: "./data/cache/embeddings"
+  token_dir: "./data/cache/tokens"
+
+# UI Settings
+ui:
+  show_progress: true  # Show progress bars for long operations

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Context Budget Optimizer</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -79,6 +82,24 @@
                         <div class="stat-card">
                             <div class="stat-label">Tokens Used</div>
                             <div class="stat-value" id="tokens-used">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cost-estimate-section" class="cost-estimate hidden">
+                    <h3>Cost Estimate</h3>
+                    <div class="cost-info">
+                        <div class="cost-item">
+                            <span class="cost-label">Estimated Prompt Tokens:</span>
+                            <span class="cost-value" id="est-prompt-tokens">-</span>
+                        </div>
+                        <div class="cost-item">
+                            <span class="cost-label">Estimated Completion Tokens:</span>
+                            <span class="cost-value" id="est-completion-tokens">-</span>
+                        </div>
+                        <div class="cost-item">
+                            <span class="cost-label">Estimated Total Tokens:</span>
+                            <span class="cost-value" id="est-total-tokens">-</span>
                         </div>
                     </div>
                 </div>

@@ -26,7 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Budget slider
     budgetSlider.addEventListener('input', (e) => {
         budgetValue.textContent = e.target.value;
+        // Auto-estimate cost when budget changes (if query exists)
+        if (queryInput.value.trim()) {
+            debounceEstimateCost();
+        }
     });
+
+    // Estimate cost when query changes
+    queryInput.addEventListener('input', debounceEstimateCost);
 
     // Submit button
     submitBtn.addEventListener('click', handleSubmit);
@@ -60,6 +67,27 @@ async function handleSubmit() {
     // Hide previous results
     hideAllSections();
     showLoading();
+
+    // Estimate cost first
+    try {
+        const estimateResponse = await fetch(`${API_BASE}/api/estimate-cost`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                budget: budget
+            })
+        });
+
+        if (estimateResponse.ok) {
+            const estimate = await estimateResponse.json();
+            displayCostEstimate(estimate);
+        }
+    } catch (error) {
+        console.error('Error estimating cost:', error);
+    }
 
     try {
         const response = await fetch(`${API_BASE}/api/query`, {
@@ -123,8 +151,18 @@ function displayResults(data) {
         opt.budget_used ? `${opt.budget_used.toFixed(1)}%` : '-';
     document.getElementById('tokens-used').textContent = opt.total_tokens || '-';
 
+    // Hide cost estimate (show actual results)
+    document.getElementById('cost-estimate-section').classList.add('hidden');
+
     // Render chunks
     renderChunks();
+}
+
+function displayCostEstimate(estimate) {
+    document.getElementById('est-prompt-tokens').textContent = estimate.estimated_prompt_tokens || '-';
+    document.getElementById('est-completion-tokens').textContent = estimate.estimated_completion_tokens || '-';
+    document.getElementById('est-total-tokens').textContent = estimate.estimated_total_tokens || '-';
+    document.getElementById('cost-estimate-section').classList.remove('hidden');
 }
 
 function renderChunks() {
@@ -220,4 +258,36 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Debounce for cost estimation
+let estimateTimeout;
+function debounceEstimateCost() {
+    clearTimeout(estimateTimeout);
+    estimateTimeout = setTimeout(async () => {
+        const query = queryInput.value.trim();
+        const budget = parseInt(budgetSlider.value);
+        
+        if (!query) {
+            document.getElementById('cost-estimate-section').classList.add('hidden');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/estimate-cost`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query, budget })
+            });
+            
+            if (response.ok) {
+                const estimate = await response.json();
+                displayCostEstimate(estimate);
+            }
+        } catch (error) {
+            console.error('Error estimating cost:', error);
+        }
+    }, 500); // Wait 500ms after user stops typing
 }

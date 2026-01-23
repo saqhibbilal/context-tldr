@@ -360,3 +360,60 @@ class QueryMetadataStore:
             return []
         finally:
             conn.close()
+    
+    def get_usage_statistics(self) -> Dict[str, Any]:
+        """
+        Get usage statistics.
+        
+        Returns:
+            Dictionary with usage statistics
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # Total queries
+            cursor.execute("SELECT COUNT(*) FROM queries")
+            total_queries = cursor.fetchone()[0] or 0
+            
+            # Successful queries (with responses)
+            cursor.execute("SELECT COUNT(*) FROM queries q INNER JOIN responses r ON q.id = r.query_id")
+            successful_queries = cursor.fetchone()[0] or 0
+            
+            # Success rate
+            success_rate = (successful_queries / total_queries * 100) if total_queries > 0 else 0
+            
+            # Total tokens used
+            cursor.execute("SELECT SUM(total_tokens) FROM responses")
+            total_tokens = cursor.fetchone()[0] or 0
+            
+            # Average tokens per query
+            avg_tokens = (total_tokens / successful_queries) if successful_queries > 0 else 0
+            
+            # Average chunks per query
+            cursor.execute("SELECT AVG(chunks_included_count) FROM responses")
+            avg_chunks = cursor.fetchone()[0] or 0
+            
+            # Recent activity (last 24 hours)
+            cursor.execute("""
+                SELECT COUNT(*) FROM queries 
+                WHERE timestamp > datetime('now', '-1 day')
+            """)
+            recent_queries = cursor.fetchone()[0] or 0
+            
+            return {
+                'total_queries': total_queries,
+                'successful_queries': successful_queries,
+                'failed_queries': total_queries - successful_queries,
+                'success_rate': round(success_rate, 2),
+                'total_tokens': total_tokens,
+                'avg_tokens_per_query': round(avg_tokens, 2),
+                'avg_chunks_per_query': round(avg_chunks, 2),
+                'recent_queries_24h': recent_queries
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting usage statistics: {e}")
+            return {}
+        finally:
+            conn.close()

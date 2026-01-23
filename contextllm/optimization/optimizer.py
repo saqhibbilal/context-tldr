@@ -8,6 +8,7 @@ from contextllm.optimization.token_estimator import (
 )
 from contextllm.optimization.scorer import score_chunks, get_relevance_score
 from contextllm.optimization.budget import BudgetManager, validate_budget
+from contextllm.utils.errors import BudgetTooSmallError
 
 logger = logging.getLogger(__name__)
 
