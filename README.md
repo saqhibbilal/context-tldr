@@ -8,11 +8,8 @@ The optimization layer is the core of the project. It estimates token counts for
 
 The entire flow works like this: you start by ingesting documents through the CLI, which processes them into chunks and stores embeddings locally. When you ask a question through the web interface or CLI, the system retrieves candidate chunks, scores them, optimizes selection based on your token budget, and generates an answer. The web interface shows you exactly which chunks were selected, why they were chosen, and how the budget was utilized. You can adjust the token budget with a slider to see how it affects chunk selection and answer quality. The system is designed to be transparent about its decisions, so you can understand the trade-offs between budget constraints and information quality.
 
-This project focuses on LLM systems engineering rather than prompt experimentation. It demonstrates real problems faced in production GenAI systems like cost control, explainability, and retrieval quality. Everything runs locally except for the LLM calls, which use the Mistral API. The system is free to build, easy to demo locally, and works well as a portfolio project that highlights system-level thinking.
+This project focuses on LLM systems engineering rather than prompt experimentation. It demonstrates real problems faced in production GenAI systems like cost control, explainability, and retrieval quality. Everything runs locally except for the LLM calls, which use the Mistral API. 
 
-## Quick Start
-
-See [setup.md](setup.md) for detailed installation and usage instructions.
 
 ## Features
 
@@ -27,13 +24,11 @@ See [setup.md](setup.md) for detailed installation and usage instructions.
 
 ## Technology Stack
 
-- Python 3.8+
+- Python  
 - SentenceTransformers for embeddings
 - ChromaDB for vector storage
 - Mistral API for LLM generation
 - FastAPI for the backend
 - SQLite for metadata tracking
 
-## License
-
-MIT License
+ 
