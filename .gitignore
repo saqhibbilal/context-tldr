@@ -63,8 +63,8 @@ htmlcov/
 chroma_db/
 vector_db/
 
-# Documentation (temporary)
-README.md
+# Documentation
+# README.md is now tracked
 
 # Docker
 .docker/
